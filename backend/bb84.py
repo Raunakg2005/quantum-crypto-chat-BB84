@@ -6,9 +6,9 @@ try:
     from qiskit import QuantumCircuit, Aer, execute
     from qiskit.providers.aer import AerSimulator
 except Exception:
-    QuantumCircuit = None  # type: ignore
-    Aer = None  # type: ignore
-    execute = None  # type: ignore
+    QuantumCircuit = None  
+    Aer = None  
+    execute = None  
 
 
 def _random_bits(n: int) -> List[int]:

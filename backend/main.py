@@ -4,13 +4,10 @@ from pydantic import BaseModel
 from typing import Optional, Any
 import os
 
-# Use direct module import instead of relative import so uvicorn can import when
-# running from the backend directory on Render.
 from bb84 import generate_bb84_key, xor_encrypt, xor_decrypt
 
 app = FastAPI(title="BB84 Demo Backend")
 
-# configure CORS from env or default to localhost
 allow_origins_env = os.getenv('ALLOW_ORIGINS')
 if allow_origins_env:
     allow_origins = [o.strip() for o in allow_origins_env.split(',') if o.strip()]

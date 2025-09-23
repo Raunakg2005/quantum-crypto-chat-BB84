@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import BackendStatusBanner from '../components/BackendStatusBanner';
+import { ThemeProvider } from '../contexts/ThemeContext';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +14,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "quantum-crypto-chat",
-  description: "Made by RKG",
+  title: "Quantum Crypto Chat",
+  description: "Professional quantum key distribution communication platform",
+  icons: {
+    icon: [
+      { url: '/qc-app.png', sizes: '32x32', type: 'image/png' },
+      { url: '/qc-app.png', sizes: '16x16', type: 'image/png' },
+    ],
+    shortcut: '/qc-app.png',
+    apple: '/qc-app.png',
+    other: {
+      rel: 'apple-touch-icon-precomposed',
+      url: '/qc-app.png',
+    },
+  },
 };
 
 export default function RootLayout({
@@ -28,8 +40,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <BackendStatusBanner />
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
