@@ -1,103 +1,144 @@
-import Image from "next/image";
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import ChatInput from '../components/ChatInput';
+import Message from '../components/Message';
+import * as api from '../utils/api';
+
+type Msg = {
+  id: string;
+  cipher: string;
+  plain?: string;
+  keyBits?: string;
+  bb84?: {
+    sender_bits: string;
+    sender_bases: string;
+    receiver_bases: string;
+    kept_positions: number[];
+    shared_key: string;
+    eve_bases?: string | null;
+  };
+  author: 'me' | 'them';
+  status?: 'encrypting' | 'sent' | 'decrypting' | 'decrypted' | 'error';
+  time: string;
+};
+
+type BB84Data = {
+  sender_bits: string;
+  sender_bases: string;
+  receiver_bases: string;
+  kept_positions: number[];
+  shared_key: string;
+  eve_bases?: string | null;
+};
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [viewMode, setViewMode] = useState<'encrypted' | 'decrypted'>('encrypted');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const send = async (text: string) => {
+    const id = String(Date.now()) + Math.random().toString(36).slice(2, 8);
+    // optimistic message with status
+  const optimistic: Msg = { id, cipher: '...', plain: undefined, author: 'me', time: new Date().toLocaleTimeString(), keyBits: undefined, status: 'encrypting' };
+    setMessages((m) => [optimistic, ...m]);
+
+    // Backend-only flow: request BB84 key details then encrypt with returned shared key
+  const bb84 = (await api.generateKey(256)) as unknown as BB84Data;
+  const keyBits = bb84.shared_key;
+    // already optimistic.status='encrypting'
+    const enc = await api.encrypt(text, keyBits);
+    const cipher = enc.cipher_hex as string;
+    optimistic.cipher = cipher;
+    optimistic.keyBits = keyBits;
+    optimistic.bb84 = bb84;
+    // do NOT set optimistic.plain until decrypt is run
+    optimistic.status = 'sent';
+    setMessages((m) => [optimistic, ...m.filter((x) => x.id !== id)]);
+  };
+
+  useEffect(() => {
+    if (viewMode !== 'decrypted') return;
+
+    (async () => {
+      for (const m of messages) {
+        if (m.keyBits && m.cipher && !m.plain) {
+          try {
+            m.status = 'decrypting';
+            setMessages((cur) => [...cur]);
+            const dec = await api.decrypt(m.cipher, m.keyBits);
+            m.plain = dec.message;
+            m.status = 'decrypted';
+          } catch {
+            m.plain = '[decrypt error]';
+            m.status = 'error';
+          }
+        }
+      }
+      setMessages((cur) => [...cur]);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 text-white">
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMDMpIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjEiLz48L2c+PC9zdmc+')] opacity-30"></div>
+      
+      <main className="relative max-w-4xl mx-auto p-6">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-2">
+            Quantum Crypto Chat
+          </h1>
+          <p className="text-slate-300 text-lg">BB84 Quantum Key Distribution Demo</p>
+        </div>
+
+        <div className="flex items-center justify-center gap-6 mb-6">
+          <label className="inline-flex items-center gap-3 cursor-pointer">
+            <input 
+              type="radio" 
+              checked={viewMode === 'encrypted'} 
+              onChange={() => setViewMode('encrypted')}
+              className="w-4 h-4 text-cyan-400 bg-slate-800 border-slate-600 focus:ring-cyan-400 focus:ring-2"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <span className="text-slate-200 font-medium">🔒 Encrypted View</span>
+          </label>
+          <label className="inline-flex items-center gap-3 cursor-pointer">
+            <input 
+              type="radio" 
+              checked={viewMode === 'decrypted'} 
+              onChange={() => setViewMode('decrypted')}
+              className="w-4 h-4 text-cyan-400 bg-slate-800 border-slate-600 focus:ring-cyan-400 focus:ring-2"
+            />
+            <span className="text-slate-200 font-medium">🔓 Decrypted View</span>
+          </label>
+        </div>
+
+        <div className="backdrop-blur-sm bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 mb-6 min-h-[400px] shadow-2xl">
+          {messages.length === 0 && (
+            <div className="text-center text-slate-400 py-12">
+              <div className="text-6xl mb-4">⚛️</div>
+              <p className="text-lg">No messages yet — send one to experience quantum encryption!</p>
+            </div>
+          )}
+          <div className="flex flex-col-reverse space-y-reverse space-y-4">
+            {messages.map((m) => (
+              <Message
+                key={m.id}
+                cipher={m.cipher}
+                decrypted={viewMode === 'decrypted' ? m.plain : undefined}
+                author={m.author}
+                time={m.time}
+                viewMode={viewMode}
+                status={m.status}
+                bb84={m.bb84}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="backdrop-blur-sm bg-slate-800/30 border border-slate-700/50 rounded-2xl p-4 shadow-xl">
+          <ChatInput onSend={send} placeholder="Type your quantum-encrypted message..." />
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
