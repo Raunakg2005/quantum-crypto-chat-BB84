@@ -4,7 +4,9 @@ from pydantic import BaseModel
 from typing import Optional, Any
 import os
 
-from .bb84 import generate_bb84_key, xor_encrypt, xor_decrypt
+# Use direct module import instead of relative import so uvicorn can import when
+# running from the backend directory on Render.
+from bb84 import generate_bb84_key, xor_encrypt, xor_decrypt
 
 app = FastAPI(title="BB84 Demo Backend")
 
@@ -61,3 +63,9 @@ def decrypt(req: DecryptRequest):
     cipher = bytes.fromhex(req.cipher_hex)
     plain = xor_decrypt(cipher, req.key_bits)
     return DecryptResponse(message=plain.decode('utf-8', errors='replace'))
+
+
+@app.get("/healthz")
+def healthz():
+    """Lightweight health-check used by load balancers and hosts like Render."""
+    return {"status": "ok"}
