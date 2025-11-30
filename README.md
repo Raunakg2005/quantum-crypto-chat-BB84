@@ -1,14 +1,3 @@
-# Quantum Cryptography Demo App
-
-This repository contains a small demo showing BB84 quantum key distribution (simulated) and a chat-like UI that uses the derived key to XOR-encrypt messages.
-
-## Whats inside
-- `app/` - Next.js frontend (app router). Serves the chat UI.
-- `components/` - React components used by the frontend.
-- `backend/` - FastAPI backend that simulates BB84 and exposes `/generate_key`, `/encrypt`, `/decrypt`.
-
-## Quick start (recommended)
-
 Prerequisites:
 - Node.js (16+ recommended)
 - Python 3.11+ (or your system Python)
