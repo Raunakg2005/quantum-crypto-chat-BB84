@@ -39,6 +39,18 @@ Open http://localhost:3000 and use the chat UI. The frontend pings the backend; 
 ## Environment
 - `NEXT_PUBLIC_API_BASE` - optional override for backend base URL (defaults to `http://localhost:8001`).
 
+## Understanding BB84 Quantum Key Distribution
+
+The BB84 protocol is a quantum key distribution scheme that allows two parties (Alice and Bob) to establish a shared secret key. Here's how it works:
+
+1. **Quantum Transmission**: Alice sends qubits to Bob using random bases (rectilinear or diagonal)
+2. **Measurement**: Bob measures each qubit using randomly chosen bases
+3. **Basis Reconciliation**: Alice and Bob publicly compare their bases (not the values)
+4. **Key Sifting**: They keep only the bits where they used the same basis
+5. **Error Detection**: They check a subset of bits to detect eavesdropping
+
+This demo simulates these quantum mechanics using classical computing to demonstrate the concept.
+
 ## Notes
 - The encryption used is XOR for demonstration only — not secure for real use. For a stronger educational demo, consider replacing XOR with AES using the derived key as a seed/key material (not covered by this demo).
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
